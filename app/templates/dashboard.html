@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panel de gestion - Salon</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Salon de Belleza Aurora</h1>
+    <form method="get" action="{{ url_for('dashboard') }}" class="date-picker">
+      <label for="date">Fecha</label>
+      <input type="date" id="date" name="date" value="{{ target_date }}">
+      <button type="submit">Ver</button>
+    </form>
+  </header>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-container">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-label">Citas totales</span>
+        <span class="kpi-value">{{ kpis.total_appointments }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Completadas</span>
+        <span class="kpi-value">{{ kpis.completed }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Tasa finalizacion</span>
+        <span class="kpi-value">{{ kpis.completion_rate }}%</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Ingresos del dia</span>
+        <span class="kpi-value">{{ "%.2f"|format(kpis.revenue_cents / 100) }} &euro;</span>
+      </div>
+    </section>
+
+    <section class="charts">
+      <div class="chart-box">
+        <h2>Estado de las citas</h2>
+        <canvas id="statusChart" height="220"></canvas>
+      </div>
+      <div class="chart-box">
+        <h2>Ingresos por servicio</h2>
+        <canvas id="revenueChart" height="220"></canvas>
+      </div>
+    </section>
+
+    <section class="new-appointment">
+      <h2>Nueva cita</h2>
+      <form method="post" action="{{ url_for('create_appointment') }}" class="appt-form">
+        {{ form.csrf_token }}
+        <div class="field">
+          <label for="client_name">Cliente</label>
+          {{ form.client_name(id="client_name", maxlength="80") }}
+        </div>
+        <div class="field">
+          <label for="service_id">Servicio</label>
+          <select id="service_id" name="service_id">
+            {% for service in services %}
+              <option value="{{ service.id }}">
+                {{ service.name }} ({{ "%.2f"|format(service.price_cents / 100) }} &euro;)
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="appointment_date">Fecha</label>
+          {{ form.appointment_date(id="appointment_date", type="date", value=target_date) }}
+        </div>
+        <button type="submit">Crear cita</button>
+      </form>
+    </section>
+
+    <section class="appointments">
+      <h2>Citas del dia</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Servicio</th>
+            <th>Estado</th>
+            <th>Precio</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for appt in appointments %}
+            <tr>
+              <td>{{ appt.client_name }}</td>
+              <td>{{ appt.service_name }}</td>
+              <td><span class="badge badge-{{ appt.status }}">{{ appt.status }}</span></td>
+              <td>{{ "%.2f"|format(appt.price_cents / 100) }} &euro;</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="4" class="empty">No hay citas para esta fecha</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="{{ url_for('static', filename='dashboard.js') }}"
+          data-date="{{ target_date }}"></script>
+</body>
+</html>
